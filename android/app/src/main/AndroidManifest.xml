@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 인터넷 (API 통신) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 위치 (GPS) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
     <application
         android:label="tt_running_app"
         android:name="${applicationName}"
