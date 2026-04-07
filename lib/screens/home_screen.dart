@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/location_provider.dart';
+import '../providers/settings_provider.dart';
+import '../models/recommendation_model.dart';
+import '../widgets/timeline_widget.dart';
 export '../providers/location_provider.dart' show LocationNotifier;
 
 // 메인 화면
@@ -33,7 +36,31 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: const Center(child: Text('메인 화면 (준비 중)')),
+      body: Container(
+        // 임시 배경색 (나중에 Lottie로 교체)
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                TimelineWidget(
+                  recommendations: generateDummyRecommendations(),
+                  settings: ref.watch(settingsProvider),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
