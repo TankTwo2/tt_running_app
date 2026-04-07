@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/settings_provider.dart';
 import 'screens/settings_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -19,31 +20,9 @@ class MyApp extends ConsumerWidget {
       ),
       home: const AppEntryPoint(),
       routes: {
-        '/home': (context) => const HomeStub(),
+        '/home': (context) => const HomeScreen(),
         '/settings': (context) => const SettingsScreen(),
       },
-    );
-  }
-}
-
-// 메인 화면 임시 stub (나중에 별도 파일로 분리 예정)
-class HomeStub extends StatelessWidget {
-  const HomeStub({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('오늘의 운동 추천'),
-        actions: [
-          // 설정 버튼: 설정 화면으로 이동
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.of(context).pushNamed('/settings'),
-          ),
-        ],
-      ),
-      body: const Center(child: Text('메인 화면 (준비 중)')),
     );
   }
 }
@@ -59,7 +38,7 @@ class AppEntryPoint extends ConsumerWidget {
     return isFirstRun.when(
       data: (firstRun) => firstRun
           ? const SettingsScreen(isFirstRun: true)
-          : const HomeStub(),
+          : const HomeScreen(),
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),

@@ -1,17 +1,45 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/location_service.dart';
 
+// 최근 위치 항목 (주소 + 좌표 함께 저장)
+class RecentLocation {
+  final String address;
+  final double latitude;
+  final double longitude;
+
+  const RecentLocation({
+    required this.address,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  // SharedPreferences 저장을 위해 Map으로 변환
+  Map<String, dynamic> toMap() => {
+        'address': address,
+        'lat': latitude,
+        'lng': longitude,
+      };
+
+  factory RecentLocation.fromMap(Map<String, dynamic> map) => RecentLocation(
+        address: map['address'] as String,
+        latitude: map['lat'] as double,
+        longitude: map['lng'] as double,
+      );
+}
+
 // 위치 상태를 나타내는 클래스
 class LocationState {
-  final double? latitude;   // 위도
-  final double? longitude;  // 경도
-  final String? address;    // 표시용 주소 (수동 설정 시 사용)
-  final bool isManual;      // true면 수동 설정, false면 GPS 자동
+  final double? latitude;
+  final double? longitude;
+  final String? address;
+  final bool isManual;
   final bool isLoading;
   final String? error;
+  final List<RecentLocation> recentLocations; // 최근 위치 히스토리 (최대 5개)
 
   const LocationState({
     this.latitude,
@@ -20,6 +48,7 @@ class LocationState {
     this.isManual = false,
     this.isLoading = false,
     this.error,
+    this.recentLocations = const [],
   });
 
   bool get hasLocation => latitude != null && longitude != null;
@@ -31,6 +60,7 @@ class LocationState {
     bool? isManual,
     bool? isLoading,
     String? error,
+    List<RecentLocation>? recentLocations,
   }) {
     return LocationState(
       latitude: latitude ?? this.latitude,
@@ -38,7 +68,8 @@ class LocationState {
       address: address ?? this.address,
       isManual: isManual ?? this.isManual,
       isLoading: isLoading ?? this.isLoading,
-      error: error,  // error는 null로 초기화 가능하도록 ?? 미사용
+      error: error,
+      recentLocations: recentLocations ?? this.recentLocations,
     );
   }
 }
@@ -52,16 +83,16 @@ class LocationNotifier extends StateNotifier<LocationState> {
   final _service = LocationService();
 
   LocationNotifier() : super(const LocationState()) {
-    _loadSaved(); // 앱 시작 시 저장된 위치 불러오기
+    _loadSaved();
   }
 
-  // 저장된 위치 불러오기 (수동 설정했던 위치가 있으면 복원)
   Future<void> _loadSaved() async {
     final prefs = await SharedPreferences.getInstance();
     final lat = prefs.getDouble('location_lat');
     final lng = prefs.getDouble('location_lng');
     final address = prefs.getString('location_address');
     final isManual = prefs.getBool('location_is_manual') ?? false;
+    final recentLocations = _loadRecentLocations(prefs);
 
     if (lat != null && lng != null) {
       state = LocationState(
@@ -69,35 +100,67 @@ class LocationNotifier extends StateNotifier<LocationState> {
         longitude: lng,
         address: address,
         isManual: isManual,
+        recentLocations: recentLocations,
       );
+    } else {
+      state = state.copyWith(recentLocations: recentLocations);
     }
+  }
+
+  // SharedPreferences에서 최근 위치 목록 불러오기
+  List<RecentLocation> _loadRecentLocations(SharedPreferences prefs) {
+    final json = prefs.getString('recent_locations');
+    if (json == null) return [];
+    final list = jsonDecode(json) as List;
+    return list.map((e) => RecentLocation.fromMap(Map<String, dynamic>.from(e))).toList();
+  }
+
+  // 최근 위치 목록에 추가 (중복 주소 제거, 최대 5개)
+  Future<List<RecentLocation>> _addToRecent(
+    SharedPreferences prefs,
+    RecentLocation newLocation,
+  ) async {
+    final recent = _loadRecentLocations(prefs).toList();
+    // 같은 주소 중복 제거
+    recent.removeWhere((r) => r.address == newLocation.address);
+    recent.insert(0, newLocation);
+    if (recent.length > 5) recent.removeLast();
+    await prefs.setString('recent_locations', jsonEncode(recent.map((r) => r.toMap()).toList()));
+    return recent;
   }
 
   // GPS로 현재 위치 가져오기
   Future<void> fetchCurrentLocation() async {
     state = state.copyWith(isLoading: true);
-
     final result = await _service.getCurrentLocation();
 
     if (result.isSuccess) {
       final pos = result.position!;
-      // 주소 변환 성공 시 새 주소 사용, 실패 시 기존 주소 유지
       final address = result.address ?? state.address;
+      final prefs = await SharedPreferences.getInstance();
+
+      // 주소가 있으면 히스토리에 추가
+      final recent = address != null
+          ? await _addToRecent(prefs, RecentLocation(
+              address: address,
+              latitude: pos.latitude,
+              longitude: pos.longitude,
+            ))
+          : state.recentLocations;
+
+      await prefs.setDouble('location_lat', pos.latitude);
+      await prefs.setDouble('location_lng', pos.longitude);
+      if (address != null) await prefs.setString('location_address', address);
+      await prefs.setBool('location_is_manual', false);
+
       state = LocationState(
         latitude: pos.latitude,
         longitude: pos.longitude,
         address: address,
         isManual: false,
         isLoading: false,
+        recentLocations: recent,
       );
-      // SharedPreferences에 저장
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('location_lat', pos.latitude);
-      await prefs.setDouble('location_lng', pos.longitude);
-      if (address != null) {
-        await prefs.setString('location_address', address);
-      }
-      await prefs.setBool('location_is_manual', false);
     } else {
       state = state.copyWith(isLoading: false, error: result.error);
     }
@@ -109,35 +172,40 @@ class LocationNotifier extends StateNotifier<LocationState> {
     required double longitude,
     required String address,
   }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final recent = await _addToRecent(prefs, RecentLocation(
+      address: address,
+      latitude: latitude,
+      longitude: longitude,
+    ));
+
+    await prefs.setDouble('location_lat', latitude);
+    await prefs.setDouble('location_lng', longitude);
+    await prefs.setString('location_address', address);
+    await prefs.setBool('location_is_manual', true);
+
     state = LocationState(
       latitude: latitude,
       longitude: longitude,
       address: address,
       isManual: true,
+      recentLocations: recent,
     );
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('location_lat', latitude);
-    await prefs.setDouble('location_lng', longitude);
-    await prefs.setString('location_address', address);
-    await prefs.setBool('location_is_manual', true);
   }
 
-  // 주소 텍스트 → 좌표 변환 후 저장 (수동 입력용)
-  // 성공 시 true, 주소를 찾지 못하면 false 반환
+  // 주소 텍스트 → 좌표 변환 후 저장 (직접 입력용)
   Future<bool> setManualLocationByAddress(String inputAddress) async {
     try {
-      // locationFromAddress: 주소 문자열 → 위도/경도 변환
       final locations = await locationFromAddress(inputAddress);
       if (locations.isEmpty) return false;
 
       final loc = locations.first;
-      // 좌표로 다시 정제된 주소 가져오기 (동까지 표시)
       final resolvedAddress = await _service.coordsToAddress(loc.latitude, loc.longitude);
 
       await setManualLocation(
         latitude: loc.latitude,
         longitude: loc.longitude,
-        address: resolvedAddress ?? inputAddress, // 변환 실패 시 입력값 그대로
+        address: resolvedAddress ?? inputAddress,
       );
       return true;
     } catch (_) {
@@ -145,9 +213,15 @@ class LocationNotifier extends StateNotifier<LocationState> {
     }
   }
 
-  // 권한 앱 설정 열기
-  Future<void> openSettings() => _service.openAppSettings();
+  // 최근 위치 선택 → 저장된 좌표 그대로 사용 (재변환 없음)
+  Future<void> selectRecentLocation(RecentLocation recent) async {
+    await setManualLocation(
+      latitude: recent.latitude,
+      longitude: recent.longitude,
+      address: recent.address,
+    );
+  }
 
-  // 권한 상태 확인
+  Future<void> openSettings() => _service.openAppSettings();
   Future<LocationPermission> checkPermission() => _service.checkPermission();
 }
