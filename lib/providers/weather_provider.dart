@@ -43,8 +43,11 @@ final recommendationProvider = FutureProvider<List<List<HourlyRecommendation>>>(
 
   if (!locationState.hasLocation) throw const NoLocationException();
 
-  // airQuality는 홈스크린 PM 카드에서 별도 표시, 추천 등급 계산에 미사용
   final weatherList = await ref.watch(weatherProvider.future);
+
+  // PM2.5: 현재값만 있으므로 오늘 추천에만 반영, 내일은 null
+  final airData = await ref.watch(airQualityProvider.future);
+  final currentPm25 = airData?.pm25;
 
   final now = DateTime.now();
   final today = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
@@ -53,7 +56,7 @@ final recommendationProvider = FutureProvider<List<List<HourlyRecommendation>>>(
     return '${t.year}${t.month.toString().padLeft(2, '0')}${t.day.toString().padLeft(2, '0')}';
   }();
 
-  List<HourlyRecommendation> toRecommendations(String date, {int minHour = 5}) {
+  List<HourlyRecommendation> toRecommendations(String date, {int minHour = 5, double? pm25}) {
     return weatherList
         .where((w) => w.date == date && w.hour >= minHour)
         .map((w) => HourlyRecommendation(
@@ -61,15 +64,16 @@ final recommendationProvider = FutureProvider<List<List<HourlyRecommendation>>>(
               temperature: w.temperature,
               rainProbability: w.rainProbability.toDouble(),
               weatherType: w.weatherType,
+              pm25: pm25,
             ))
         .toList();
   }
 
-  // 오늘은 현재 시간 이후 + 최소 5시부터, 내일은 5시부터
+  // 오늘은 현재 시간 이후 + 최소 5시부터 + PM2.5 반영, 내일은 5시부터 PM 없음
   final todayMinHour = now.hour < 5 ? 5 : now.hour;
 
   return [
-    toRecommendations(today, minHour: todayMinHour),
+    toRecommendations(today, minHour: todayMinHour, pm25: currentPm25),
     toRecommendations(tomorrow),
   ];
 });
