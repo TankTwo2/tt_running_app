@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:background="@drawable/widget_background">
+
+    <!-- 헤더: 앱명 + 위치 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="달리기 좋은 시간"
+            android:textSize="13sp"
+            android:textColor="#AAFFFFFF"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="위치 로딩 중"
+            android:textSize="10sp"
+            android:textColor="#88FFFFFF" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="#33FFFFFF" />
+
+    <!-- 오늘 섹션 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="오늘"
+        android:textSize="11sp"
+        android:textColor="#AAFFFFFF" />
+
+    <TextView
+        android:id="@+id/tv_today_best"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="데이터 불러오는 중..."
+        android:textSize="15sp"
+        android:textColor="#FFFFFFFF"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_today_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textSize="11sp"
+        android:textColor="#BBFFFFFF" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="8dp"
+        android:background="#22FFFFFF" />
+
+    <!-- 내일 섹션 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="내일"
+        android:textSize="11sp"
+        android:textColor="#AAFFFFFF" />
+
+    <TextView
+        android:id="@+id/tv_tomorrow_best"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="-"
+        android:textSize="15sp"
+        android:textColor="#FFFFFFFF"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_tomorrow_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textSize="11sp"
+        android:textColor="#BBFFFFFF" />
+
+    <!-- 마지막 업데이트 -->
+    <TextView
+        android:id="@+id/tv_updated_at"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text=""
+        android:textSize="9sp"
+        android:textColor="#66FFFFFF" />
+
+</LinearLayout>

@@ -4,7 +4,9 @@ import '../models/air_quality_model.dart';
 import '../models/recommendation_model.dart';
 import '../services/weather_service.dart';
 import '../services/air_quality_service.dart';
+import '../services/widget_service.dart';
 import 'location_provider.dart';
+import 'settings_provider.dart';
 
 // 위치 없음을 나타내는 sentinel (로딩과 구분)
 class NoLocationException implements Exception {
@@ -72,8 +74,17 @@ final recommendationProvider = FutureProvider<List<List<HourlyRecommendation>>>(
   // 오늘은 현재 시간 이후 + 최소 5시부터 + PM2.5 반영, 내일은 5시부터 PM 없음
   final todayMinHour = now.hour < 5 ? 5 : now.hour;
 
-  return [
-    toRecommendations(today, minHour: todayMinHour, pm25: currentPm25),
-    toRecommendations(tomorrow),
-  ];
+  final todayList = toRecommendations(today, minHour: todayMinHour, pm25: currentPm25);
+  final tomorrowList = toRecommendations(tomorrow);
+
+  // 위젯 데이터 갱신 (에러 나도 추천 데이터는 정상 반환)
+  final settings = ref.read(settingsProvider);
+  WidgetService.update(
+    today: todayList,
+    tomorrow: tomorrowList,
+    settings: settings,
+    location: locationState.address ?? '위치 없음',
+  ).ignore();
+
+  return [todayList, tomorrowList];
 });

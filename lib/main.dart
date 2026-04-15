@@ -4,8 +4,11 @@ import 'providers/settings_provider.dart';
 import 'screens/settings_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/permission_screen.dart';
+import 'services/widget_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await WidgetService.init();
   runApp(const ProviderScope(child: MyApp()));
 }
 
