@@ -31,6 +31,8 @@ class WidgetService {
       HomeWidget.saveWidgetData('tomorrow_best_time', tomorrowBest),
       HomeWidget.saveWidgetData('tomorrow_summary', tomorrowSummary),
       HomeWidget.saveWidgetData('updated_at', updatedAt),
+      // 백그라운드 갱신 루프 방지용 타임스탬프
+      HomeWidget.saveWidgetData('widget_refreshed_at', now.millisecondsSinceEpoch),
     ]);
 
     await HomeWidget.updateWidget(

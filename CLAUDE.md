@@ -88,29 +88,17 @@ Flutter로 개발 중.
 - [x] 프로젝트 초기 설정 (패키지, 폴더 구조, Android 권한)
 - [x] 설정 화면 구현 (슬라이더, 디폴트값 마커, SharedPreferences 저장)
 - [x] 최초 실행 분기 처리
+- [x] 날씨/미세먼지 API 연동 (기상청 + 에어코리아)
+- [x] 데이터 모델 정의 (WeatherModel, AirQualityModel, HourlyRecommendation)
+- [x] 추천 엔진 (PM2.5 + 날씨 기반 등급 계산, 설정값 반영)
+- [x] 메인 화면 타임라인 UI
+- [x] 홈 위젯 (소형/대형, SharedPreferences 연동, 30분 백그라운드 자동 갱신)
 
 ### 진행 예정 (순서대로)
 
-#### feature/settings-screen 마무리
-- [ ] 위치 권한 요청 UI 추가
-- [ ] 수동 위치 설정 기능
-
-#### feature/api-integration
-- [x] 기상청 API 신청 (동네예보 - 초단기실황·초단기예보·단기예보)
-- [x] 에어코리아 API 신청 (측정소별 실시간 측정정보, 시도별 실시간 측정정보)
-- [ ] API 키 발급 대기 중
-- [ ] 현재 위치 기반 날씨 데이터 fetch
-- [ ] 현재 위치 기반 미세먼지 데이터 fetch
-- [ ] 데이터 모델 정의 (WeatherModel, AirQualityModel)
-
-#### feature/recommendation-engine
-- [ ] 시간대별 운동 추천 점수 계산 로직
-- [ ] 설정값 반영 (미세먼지/기온/강수확률 기준 적용)
-
-#### feature/main-screen
-- [ ] 시간별 타임라인 UI 구현
-- [ ] Lottie 날씨 배경 애니메이션 연동
-- [ ] lottiefiles.com 에서 에셋 다운로드
+#### 다음 작업
+- [ ] 위젯 UI 다듬기 (색상·아이콘 추가)
+- [ ] 오프라인/에러 시 마지막 성공 데이터 캐시 표시
 
 #### feature/home-widget
 - [ ] 소형 위젯 (오늘 추천)

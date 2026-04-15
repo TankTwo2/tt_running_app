@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/location_provider.dart';
@@ -298,11 +299,36 @@ class _RecommendationBody extends ConsumerStatefulWidget {
 class _RecommendationBodyState extends ConsumerState<_RecommendationBody> {
   final _pageController = PageController();
   int _currentPage = 0;
+  bool _retryDisabled = false;
+  Timer? _retryTimer;
 
   @override
   void dispose() {
     _pageController.dispose();
+    _retryTimer?.cancel();
     super.dispose();
+  }
+
+  void _retry() {
+    setState(() => _retryDisabled = true);
+    ref.invalidate(recommendationProvider);
+    _retryTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _retryDisabled = false);
+    });
+  }
+
+  String _weatherErrorMessage(Object e) {
+    final s = e.toString();
+    if (s.contains('TimeoutException') || s.contains('timeout')) {
+      return '기상청 서버에 연결하지 못했습니다.\n잠시 후 다시 시도해주세요.';
+    }
+    if (s.contains('500') || s.contains('Internal Server Error')) {
+      return '기상청 서버 오류입니다.\n잠시 후 다시 시도해주세요.';
+    }
+    if (s.contains('SocketException') || s.contains('Connection')) {
+      return '네트워크 연결을 확인해주세요.';
+    }
+    return '날씨 데이터를 불러오지 못했습니다.\n잠시 후 다시 시도해주세요.';
   }
 
   @override
@@ -316,11 +342,31 @@ class _RecommendationBodyState extends ConsumerState<_RecommendationBody> {
         if (e is NoLocationException) {
           return const Center(child: CircularProgressIndicator(color: Colors.white));
         }
+        final msg = _weatherErrorMessage(e);
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-          child: Text(
-            '데이터를 불러오지 못했습니다.\n$e',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, color: Colors.white54, size: 40),
+              const SizedBox(height: 12),
+              Text(
+                msg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _retryDisabled ? null : _retry,
+                child: _retryDisabled
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('다시 시도'),
+              ),
+            ],
           ),
         );
       },

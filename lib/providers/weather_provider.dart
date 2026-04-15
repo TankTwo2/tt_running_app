@@ -48,7 +48,8 @@ final recommendationProvider = FutureProvider<List<List<HourlyRecommendation>>>(
   final weatherList = await ref.watch(weatherProvider.future);
 
   // PM2.5: 현재값만 있으므로 오늘 추천에만 반영, 내일은 null
-  final airData = await ref.watch(airQualityProvider.future);
+  // 에어코리아 실패해도 날씨 추천은 정상 표시 (pm25 = null로 처리)
+  final airData = await ref.watch(airQualityProvider.future).catchError((_) => null);
   final currentPm25 = airData?.pm25;
 
   final now = DateTime.now();

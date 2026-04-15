@@ -24,15 +24,28 @@ class HourlyRecommendation {
   });
 
   // 기온 + 강수확률 + PM2.5(오늘만) 기반 운동 추천 등급 계산
+  // PM2.5와 날씨 각각 등급을 내고, 더 나쁜 쪽을 최종 등급으로 사용
   ExerciseGrade grade(SettingsModel settings) {
+    final pm25Grade = _pm25Grade(settings);
+    final weatherGrade = _weatherGrade(settings);
+    // enum index: good=0, normal=1, bad=2 → 높을수록 나쁨
+    return pm25Grade.index >= weatherGrade.index ? pm25Grade : weatherGrade;
+  }
+
+  // PM2.5 단독 등급 (좋음 ≤15, 보통 16~threshold, 나쁨 >threshold)
+  ExerciseGrade _pm25Grade(SettingsModel settings) {
+    if (pm25 == null) return ExerciseGrade.good; // 내일은 PM 없음 → 제한 없음
+    if (pm25! > settings.pm25Threshold) return ExerciseGrade.bad;   // 나쁨/매우나쁨
+    if (pm25! > 15) return ExerciseGrade.normal;                     // 보통
+    return ExerciseGrade.good;                                        // 좋음
+  }
+
+  // 날씨 단독 등급 (기온·강수 기반)
+  ExerciseGrade _weatherGrade(SettingsModel settings) {
     if (temperature < settings.tempMin || temperature > settings.tempMax) return ExerciseGrade.bad;
     if (rainProbability > settings.rainThreshold) return ExerciseGrade.bad;
-    if (pm25 != null && pm25! > settings.pm25Threshold * 2) return ExerciseGrade.bad;
-
-    if (pm25 != null && pm25! > settings.pm25Threshold) return ExerciseGrade.normal;
     if (rainProbability > settings.rainThreshold * 0.8) return ExerciseGrade.normal;
     if (temperature < settings.tempMin + 3 || temperature > settings.tempMax - 3) return ExerciseGrade.normal;
-
     return ExerciseGrade.good;
   }
 

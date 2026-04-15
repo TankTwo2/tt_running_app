@@ -1,42 +1,56 @@
 package com.example.tt_running_app
 
 import android.appwidget.AppWidgetManager
-import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.content.SharedPreferences
+import android.net.Uri
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetPlugin
+import es.antonborri.home_widget.HomeWidgetBackgroundIntent
+import es.antonborri.home_widget.HomeWidgetProvider
+
+// home_widget 패키지가 저장하는 SharedPreferences 이름
+private const val PREFS_NAME = "HomeWidgetPreferences"
+
+// 백그라운드 갱신 주기: 25분 (30분 위젯 주기보다 짧게 설정해 루프 방지)
+private const val REFRESH_INTERVAL_MS = 25 * 60 * 1000L
 
 // 소형 위젯 (오늘 추천)
-class SmallRunningWidget : AppWidgetProvider() {
+class SmallRunningWidget : HomeWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
+        appWidgetIds: IntArray,
+        widgetData: SharedPreferences
     ) {
         for (widgetId in appWidgetIds) {
-            updateSmallWidget(context, appWidgetManager, widgetId)
+            updateSmallWidget(context, appWidgetManager, widgetId, widgetData)
         }
+        triggerBackgroundRefreshIfStale(context, widgetData)
     }
 }
 
 // 대형 위젯 (오늘 + 내일 추천)
-class LargeRunningWidget : AppWidgetProvider() {
+class LargeRunningWidget : HomeWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
+        appWidgetIds: IntArray,
+        widgetData: SharedPreferences
     ) {
         for (widgetId in appWidgetIds) {
-            updateLargeWidget(context, appWidgetManager, widgetId)
+            updateLargeWidget(context, appWidgetManager, widgetId, widgetData)
         }
+        triggerBackgroundRefreshIfStale(context, widgetData)
     }
 }
 
-// home_widget SharedPreferences에서 데이터 읽어 소형 위젯 갱신
-fun updateSmallWidget(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int) {
-    val data = HomeWidgetPlugin.getData(context)
-
-    val location  = data.getString("location", "위치 없음") ?: "위치 없음"
+fun updateSmallWidget(
+    context: Context,
+    appWidgetManager: AppWidgetManager,
+    widgetId: Int,
+    data: SharedPreferences
+) {
+    val location  = data.getString("location", "앱을 실행해주세요") ?: "앱을 실행해주세요"
     val bestTime  = data.getString("today_best_time", "데이터 없음") ?: "데이터 없음"
     val summary   = data.getString("today_summary", "") ?: ""
     val updatedAt = data.getString("updated_at", "") ?: ""
@@ -51,16 +65,18 @@ fun updateSmallWidget(context: Context, appWidgetManager: AppWidgetManager, widg
     appWidgetManager.updateAppWidget(widgetId, views)
 }
 
-// 대형 위젯 갱신
-fun updateLargeWidget(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int) {
-    val data = HomeWidgetPlugin.getData(context)
-
-    val location       = data.getString("location", "위치 없음") ?: "위치 없음"
-    val todayBest      = data.getString("today_best_time", "데이터 없음") ?: "데이터 없음"
-    val todaySummary   = data.getString("today_summary", "") ?: ""
-    val tomorrowBest   = data.getString("tomorrow_best_time", "-") ?: "-"
+fun updateLargeWidget(
+    context: Context,
+    appWidgetManager: AppWidgetManager,
+    widgetId: Int,
+    data: SharedPreferences
+) {
+    val location        = data.getString("location", "앱을 실행해주세요") ?: "앱을 실행해주세요"
+    val todayBest       = data.getString("today_best_time", "데이터 없음") ?: "데이터 없음"
+    val todaySummary    = data.getString("today_summary", "") ?: ""
+    val tomorrowBest    = data.getString("tomorrow_best_time", "-") ?: "-"
     val tomorrowSummary = data.getString("tomorrow_summary", "") ?: ""
-    val updatedAt      = data.getString("updated_at", "") ?: ""
+    val updatedAt       = data.getString("updated_at", "") ?: ""
 
     val views = RemoteViews(context.packageName, R.layout.large_widget).apply {
         setTextViewText(R.id.tv_location, location)
@@ -72,4 +88,18 @@ fun updateLargeWidget(context: Context, appWidgetManager: AppWidgetManager, widg
     }
 
     appWidgetManager.updateAppWidget(widgetId, views)
+}
+
+// 마지막 갱신 시각이 REFRESH_INTERVAL_MS 이상 지났으면 Dart 백그라운드 콜백 요청
+fun triggerBackgroundRefreshIfStale(context: Context, data: SharedPreferences) {
+    val lastRefresh = data.getLong("widget_refreshed_at", 0L)
+    if (System.currentTimeMillis() - lastRefresh > REFRESH_INTERVAL_MS) {
+        try {
+            HomeWidgetBackgroundIntent
+                .getBroadcast(context, Uri.parse("runningwidget://refresh"))
+                .send()
+        } catch (_: Exception) {
+            // PendingIntent 취소 등 예외 무시
+        }
+    }
 }
