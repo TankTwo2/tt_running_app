@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/location_provider.dart';
 import '../providers/settings_provider.dart';
-import '../models/recommendation_model.dart';
+import '../providers/weather_provider.dart';
 import '../widgets/timeline_widget.dart';
+import '../widgets/pm_card.dart';
 export '../providers/location_provider.dart' show LocationNotifier;
 
 // 메인 화면
@@ -45,19 +46,14 @@ class HomeScreen extends ConsumerWidget {
             colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                TimelineWidget(
-                  recommendations: generateDummyRecommendations(),
-                  settings: ref.watch(settingsProvider),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
+        child: const SafeArea(
+          child: Column(
+            children: [
+              SizedBox(height: 12),
+              PmCard(),
+              SizedBox(height: 4),
+              Expanded(child: _RecommendationBody()),
+            ],
           ),
         ),
       ),
@@ -284,6 +280,128 @@ class _LocationSheet extends ConsumerWidget {
               ref.read(locationProvider.notifier).openSettings();
             },
             child: const Text('설정 열기'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 추천 데이터 로딩 상태에 따라 PageView(오늘/내일) or 로딩/에러 표시
+class _RecommendationBody extends ConsumerStatefulWidget {
+  const _RecommendationBody();
+
+  @override
+  ConsumerState<_RecommendationBody> createState() => _RecommendationBodyState();
+}
+
+class _RecommendationBodyState extends ConsumerState<_RecommendationBody> {
+  final _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final recommendAsync = ref.watch(recommendationProvider);
+    final settings = ref.watch(settingsProvider);
+
+    return recommendAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+      error: (e, _) {
+        if (e is NoLocationException) {
+          return const Center(child: CircularProgressIndicator(color: Colors.white));
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+          child: Text(
+            '데이터를 불러오지 못했습니다.\n$e',
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+        );
+      },
+      data: (pages) => Column(
+        children: [
+          // 왼쪽: 제목 / 오른쪽: 오늘·내일 탭
+          Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 4),
+            child: Row(
+              children: [
+                const Text(
+                  '시간별 운동 추천',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const Spacer(),
+                _DayTab(label: '오늘', selected: _currentPage == 0, onTap: () {
+                  _pageController.animateToPage(0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut);
+                }),
+                const SizedBox(width: 16),
+                _DayTab(label: '내일', selected: _currentPage == 1, onTap: () {
+                  _pageController.animateToPage(1,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut);
+                }),
+              ],
+            ),
+          ),
+          // 스와이프 가능한 타임라인
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: pages.length,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemBuilder: (context, i) => SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    TimelineWidget(recommendations: pages[i], settings: settings),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 오늘/내일 탭 버튼
+class _DayTab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _DayTab({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+              color: selected ? Colors.white : Colors.white54,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // 선택된 탭 아래에 밑줄
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: selected ? 32 : 0,
+            height: 2,
+            color: Colors.white,
           ),
         ],
       ),

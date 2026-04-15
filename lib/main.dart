@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/settings_provider.dart';
 import 'screens/settings_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/permission_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -22,6 +23,8 @@ class MyApp extends ConsumerWidget {
       routes: {
         '/home': (context) => const HomeScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/settings-first': (context) => const SettingsScreen(isFirstRun: true),
+        '/permission': (context) => const PermissionScreen(),
       },
     );
   }
@@ -37,7 +40,7 @@ class AppEntryPoint extends ConsumerWidget {
 
     return isFirstRun.when(
       data: (firstRun) => firstRun
-          ? const SettingsScreen(isFirstRun: true)
+          ? const PermissionScreen()
           : const HomeScreen(),
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),

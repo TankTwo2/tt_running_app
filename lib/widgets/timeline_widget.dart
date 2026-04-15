@@ -14,15 +14,6 @@ class TimelineWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            '시간별 운동 추천',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-        ),
-        const SizedBox(height: 12),
-
         // 세로 타임라인
         ListView.separated(
           shrinkWrap: true, // Column 안에서 쓰기 위해 필요
@@ -74,7 +65,7 @@ class _TimelineCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withAlpha(153), width: 1.5),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Row(
         children: [
           // 시간
@@ -93,7 +84,7 @@ class _TimelineCard extends StatelessWidget {
           // 추천 등급 바 (세로)
           Container(
             width: 4,
-            height: 36,
+            height: 28,
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(2),
@@ -101,21 +92,11 @@ class _TimelineCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // 기온 + 미세먼지
+          // 기온 · 강수확률 (한 줄)
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${item.temperature.round()}°C',
-                  style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'pm${item.pm25.round()} · 강수 ${item.rainProbability.round()}%',
-                  style: const TextStyle(fontSize: 11, color: Colors.white70),
-                ),
-              ],
+            child: Text(
+              '${item.temperature.round()}°C · 강수 ${item.rainProbability.round()}%',
+              style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
             ),
           ),
 

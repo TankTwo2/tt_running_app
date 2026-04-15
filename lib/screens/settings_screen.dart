@@ -82,22 +82,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 24),
           ],
 
-          // 미세먼지 슬라이더 (5단위)
-          _SliderTile(
-            label: '미세먼지 기준 (PM2.5)',
-            unit: 'μg/m³',
-            value: _draft.pm25Threshold,
-            defaultValue: _defaults.pm25Threshold,
-            min: 10,
-            max: 100,
-            step: 5,
-            description: '이 수치를 초과하면 야외 운동을 비추천합니다.',
-            onChanged: (v) => setState(() {
-              _draft = _draft.copyWith(pm25Threshold: v);
-            }),
-          ),
-          const Divider(height: 40),
-
           // 기온 하한 슬라이더
           _SliderTile(
             label: '기온 하한',
