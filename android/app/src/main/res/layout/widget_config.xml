@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1A1A2E">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- 타이틀 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="위젯 설정"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="28dp" />
+
+        <!-- 추천 필터 섹션 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="추천 시간대 표시"
+            android:textSize="12sp"
+            android:textColor="#99FFFFFF"
+            android:textAllCaps="true"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="10dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="28dp">
+
+            <RadioButton
+                android:id="@+id/rb_filter_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="보통 + 좋음 모두 표시"
+                android:textColor="#CCFFFFFF"
+                android:textSize="15sp"
+                android:paddingStart="8dp"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/rb_filter_good"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="좋음만 표시"
+                android:textColor="#CCFFFFFF"
+                android:textSize="15sp"
+                android:paddingStart="8dp"
+                android:layout_marginTop="6dp" />
+        </RadioGroup>
+
+        <!-- 테마 섹션 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="테마"
+            android:textSize="12sp"
+            android:textColor="#99FFFFFF"
+            android:textAllCaps="true"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="10dp" />
+
+        <Switch
+            android:id="@+id/sw_dark_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="다크 모드"
+            android:textColor="#CCFFFFFF"
+            android:textSize="15sp"
+            android:checked="true"
+            android:layout_marginBottom="28dp"
+            android:paddingStart="4dp" />
+
+        <!-- 투명도 섹션 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="배경 투명도"
+                android:textSize="12sp"
+                android:textColor="#99FFFFFF"
+                android:textAllCaps="true"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:id="@+id/tv_alpha_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="90%"
+                android:textColor="#7C83FD"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/seek_alpha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="90"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="36dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="투명"
+                android:textColor="#55FFFFFF"
+                android:textSize="11sp" />
+
+            <android.widget.Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="불투명"
+                android:textColor="#55FFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- 저장 버튼 -->
+        <Button
+            android:id="@+id/btn_save"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="저장"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:background="#7C83FD" />
+
+    </LinearLayout>
+</ScrollView>

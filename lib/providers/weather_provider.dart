@@ -4,6 +4,7 @@ import '../models/air_quality_model.dart';
 import '../models/recommendation_model.dart';
 import '../services/weather_service.dart';
 import '../services/air_quality_service.dart';
+import '../services/cache_service.dart';
 import '../services/widget_service.dart';
 import 'location_provider.dart';
 import 'settings_provider.dart';
@@ -13,29 +14,53 @@ class NoLocationException implements Exception {
   const NoLocationException();
 }
 
-// 날씨 데이터 Provider (위치가 바뀔 때마다 자동 재조회)
+/// 현재 날씨 데이터가 캐시에서 온 것인지 여부.
+/// weatherProvider가 API 실패 후 캐시를 사용하면 true로 변경.
+final isWeatherCachedProvider = StateProvider<bool>((ref) => false);
+
+// 날씨 데이터 Provider — API 실패 시 캐시 폴백
 final weatherProvider = FutureProvider<List<WeatherData>>((ref) async {
   final locationState = ref.watch(locationProvider);
 
-  // 위치 없으면 로딩 유지 (never resolve) → UI에서 로딩으로 표시됨
   if (!locationState.hasLocation) throw const NoLocationException();
 
-  return WeatherService().getForecast(
-    locationState.latitude!,
-    locationState.longitude!,
-  );
+  try {
+    final data = await WeatherService().getForecast(
+      locationState.latitude!,
+      locationState.longitude!,
+    );
+    await CacheService.saveWeather(data);
+    // ref.read: FutureProvider 내에서 다른 provider 상태 변경 (side effect)
+    ref.read(isWeatherCachedProvider.notifier).state = false;
+    return data;
+  } catch (_) {
+    final cached = await CacheService.loadWeather();
+    if (cached != null && cached.isNotEmpty) {
+      ref.read(isWeatherCachedProvider.notifier).state = true;
+      return cached;
+    }
+    ref.read(isWeatherCachedProvider.notifier).state = false;
+    rethrow;
+  }
 });
 
-// 미세먼지 데이터 Provider
+// 미세먼지 데이터 Provider — API 실패 시 캐시 폴백 (에어코리아 실패는 허용)
 final airQualityProvider = FutureProvider<AirQualityData?>((ref) async {
   final locationState = ref.watch(locationProvider);
 
   if (!locationState.hasLocation) throw const NoLocationException();
 
-  return AirQualityService().getAirQuality(
-    locationState.latitude!,
-    locationState.longitude!,
-  );
+  try {
+    final data = await AirQualityService().getAirQuality(
+      locationState.latitude!,
+      locationState.longitude!,
+    );
+    if (data != null) await CacheService.saveAirQuality(data);
+    return data;
+  } catch (_) {
+    // 에어코리아 실패 → 캐시 시도, 없으면 null (추천 엔진이 PM 없이 동작)
+    return CacheService.loadAirQuality();
+  }
 });
 
 // 날씨 + 미세먼지 → 오늘/내일 HourlyRecommendation 리스트로 합치기
@@ -80,11 +105,13 @@ final recommendationProvider = FutureProvider<List<List<HourlyRecommendation>>>(
 
   // 위젯 데이터 갱신 (에러 나도 추천 데이터는 정상 반환)
   final settings = ref.read(settingsProvider);
+  final isCached = ref.read(isWeatherCachedProvider);
   WidgetService.update(
     today: todayList,
     tomorrow: tomorrowList,
     settings: settings,
     location: locationState.address ?? '위치 없음',
+    isFromCache: isCached,
   ).ignore();
 
   return [todayList, tomorrowList];

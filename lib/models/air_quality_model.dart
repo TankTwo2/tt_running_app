@@ -16,6 +16,14 @@ class AirQualityData {
     required this.dataTime,
   });
 
+  Map<String, dynamic> toJson() => {
+    'pm25Value': pm25.toString(),
+    'pm10Value': pm10.toString(),
+    'khaiGrade': grade,
+    'stationName': stationName,
+    'dataTime': dataTime,
+  };
+
   factory AirQualityData.fromJson(Map<String, dynamic> json) {
     // API에서 '-' (미측정) 오거나 null일 수 있어서 안전하게 파싱
     return AirQualityData(

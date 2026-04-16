@@ -372,6 +372,23 @@ class _RecommendationBodyState extends ConsumerState<_RecommendationBody> {
       },
       data: (pages) => Column(
         children: [
+          // 캐시 데이터 사용 중일 때 안내 배너
+          if (ref.watch(isWeatherCachedProvider))
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              color: Colors.orange.withValues(alpha: 0.25),
+              child: const Row(
+                children: [
+                  Icon(Icons.wifi_off, size: 14, color: Colors.orangeAccent),
+                  SizedBox(width: 6),
+                  Text(
+                    '오프라인 — 마지막 저장 데이터를 표시합니다',
+                    style: TextStyle(fontSize: 12, color: Colors.orangeAccent),
+                  ),
+                ],
+              ),
+            ),
           // 왼쪽: 제목 / 오른쪽: 오늘·내일 탭
           Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 4),

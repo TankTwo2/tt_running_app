@@ -17,6 +17,24 @@ class WeatherData {
     required this.weatherType,
     required this.windSpeed,
   });
+
+  Map<String, dynamic> toJson() => {
+    'date': date,
+    'hour': hour,
+    'temperature': temperature,
+    'rainProbability': rainProbability,
+    'weatherType': weatherType,
+    'windSpeed': windSpeed,
+  };
+
+  factory WeatherData.fromJson(Map<String, dynamic> json) => WeatherData(
+    date: json['date'] as String,
+    hour: json['hour'] as int,
+    temperature: (json['temperature'] as num).toDouble(),
+    rainProbability: json['rainProbability'] as int,
+    weatherType: json['weatherType'] as String,
+    windSpeed: (json['windSpeed'] as num).toDouble(),
+  );
 }
 
 // 기상청 단기예보 카테고리 코드

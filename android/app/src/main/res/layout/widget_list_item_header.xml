@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="2dp"
+    android:paddingEnd="2dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="3dp">
+
+    <TextView
+        android:id="@+id/tv_header_day"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="오늘"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="#66FFFFFF"
+        android:letterSpacing="0.08" />
+
+</LinearLayout>
