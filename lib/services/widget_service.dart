@@ -43,8 +43,6 @@ class WidgetService {
       // 소형 위젯용 (PM2.5 제외 — 공간 절약)
       HomeWidget.saveWidgetData('today_slots_small_text', _slotsText(today, settings, showPm25: false)),
       HomeWidget.saveWidgetData('today_slots_good_only_small_text', _slotsGoodOnlyText(today, settings, showPm25: false)),
-      // 백그라운드 갱신 루프 방지용 타임스탬프
-      HomeWidget.saveWidgetData('widget_refreshed_at', now.millisecondsSinceEpoch),
     ]);
 
     await HomeWidget.updateWidget(

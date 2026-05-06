@@ -8,14 +8,10 @@ import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 
 // home_widget 패키지가 저장하는 SharedPreferences 이름
 const val PREFS_NAME = "HomeWidgetPreferences"
-
-// 백그라운드 갱신 주기: 15분
-private const val REFRESH_INTERVAL_MS = 15 * 60 * 1000L
 
 // 소형 위젯
 class SmallRunningWidget : HomeWidgetProvider() {
@@ -28,7 +24,6 @@ class SmallRunningWidget : HomeWidgetProvider() {
         for (widgetId in appWidgetIds) {
             updateSmallWidget(context, appWidgetManager, widgetId, widgetData)
         }
-        triggerBackgroundRefreshIfStale(context, widgetData)
     }
 }
 
@@ -43,7 +38,6 @@ class LargeRunningWidget : HomeWidgetProvider() {
         for (widgetId in appWidgetIds) {
             updateLargeWidget(context, appWidgetManager, widgetId, widgetData)
         }
-        triggerBackgroundRefreshIfStale(context, widgetData)
     }
 }
 
@@ -163,15 +157,3 @@ fun updateLargeWidget(
     appWidgetManager.notifyAppWidgetViewDataChanged(widgetId, R.id.lv_slots)
 }
 
-// ── 백그라운드 갱신 ──────────────────────────────────────────────────────────
-
-fun triggerBackgroundRefreshIfStale(context: Context, data: SharedPreferences) {
-    val lastRefresh = data.getLong("widget_refreshed_at", 0L)
-    if (System.currentTimeMillis() - lastRefresh > REFRESH_INTERVAL_MS) {
-        try {
-            HomeWidgetBackgroundIntent
-                .getBroadcast(context, Uri.parse("runningwidget://refresh"))
-                .send()
-        } catch (_: Exception) {}
-    }
-}

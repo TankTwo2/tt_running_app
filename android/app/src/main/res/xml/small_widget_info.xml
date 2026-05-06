@@ -4,7 +4,7 @@
     android:minHeight="40dp"
     android:targetCellWidth="2"
     android:targetCellHeight="1"
-    android:updatePeriodMillis="900000"
+    android:updatePeriodMillis="3600000"
     android:initialLayout="@layout/small_widget"
 android:description="@string/small_widget_description"
     android:resizeMode="horizontal|vertical"
