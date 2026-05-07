@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
 import 'models/settings_model.dart';
 import 'models/recommendation_model.dart';
 import 'providers/settings_provider.dart';
@@ -12,12 +13,11 @@ import 'services/weather_service.dart';
 import 'services/air_quality_service.dart';
 import 'services/widget_service.dart';
 
-// 위젯 30분 자동 갱신 시 Dart isolate에서 호출되는 백그라운드 콜백.
-// Riverpod 없이 직접 서비스를 호출해 데이터를 fetch하고 위젯을 갱신한다.
-@pragma('vm:entry-point')
-Future<void> _widgetBackground(Uri? uri) async {
-  WidgetsFlutterBinding.ensureInitialized();
+const _kWidgetRefreshTask = 'widget_refresh';
 
+// ── 공통 데이터 fetch 및 위젯 갱신 로직 ─────────────────────────────────────
+
+Future<void> _refreshWidgetData() async {
   final prefs = await SharedPreferences.getInstance();
   final lat = prefs.getDouble('location_lat');
   final lon = prefs.getDouble('location_lng');
@@ -62,15 +62,55 @@ Future<void> _widgetBackground(Uri? uri) async {
       location: address,
     );
   } catch (_) {
-    // 백그라운드 갱신 실패 시 기존 데이터 유지
+    // 갱신 실패 시 기존 데이터 유지
   }
+}
+
+// ── Workmanager 백그라운드 콜백 (위젯 자동 갱신용) ──────────────────────────
+// 반드시 최상위 함수 + @pragma('vm:entry-point') 필요
+
+@pragma('vm:entry-point')
+void _callbackDispatcher() {
+  Workmanager().executeTask((taskName, inputData) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await WidgetService.init();
+    await _refreshWidgetData();
+    return true;
+  });
+}
+
+// ── HomeWidget 백그라운드 콜백 (위젯 버튼 탭 등 인터랙션용) ─────────────────
+
+@pragma('vm:entry-point')
+Future<void> _widgetBackground(Uri? uri) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await WidgetService.init();
+  await _refreshWidgetData();
 }
 
 String _fmtDate(DateTime dt) =>
     '${dt.year}${dt.month.toString().padLeft(2, '0')}${dt.day.toString().padLeft(2, '0')}';
 
+// ── 앱 진입점 ────────────────────────────────────────────────────────────────
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Workmanager 초기화 (백그라운드 위젯 갱신)
+  await Workmanager().initialize(
+    _callbackDispatcher,
+    isInDebugMode: false,
+  );
+
+  // 1시간 주기 위젯 갱신 등록 (앱 첫 실행 시 한 번만 등록됨)
+  await Workmanager().registerPeriodicTask(
+    'widget_hourly_update',
+    _kWidgetRefreshTask,
+    frequency: const Duration(hours: 1),
+    constraints: Constraints(networkType: NetworkType.connected),
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+  );
+
   HomeWidget.registerBackgroundCallback(_widgetBackground);
   await WidgetService.init();
   runApp(const ProviderScope(child: MyApp()));

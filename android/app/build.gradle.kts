@@ -44,5 +44,5 @@ flutter {
 }
 
 dependencies {
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    // workmanager Flutter 패키지가 WorkManager 의존성을 포함함
 }
