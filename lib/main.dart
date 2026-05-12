@@ -102,13 +102,13 @@ void main() async {
     isInDebugMode: false,
   );
 
-  // 1시간 주기 위젯 갱신 등록 (앱 첫 실행 시 한 번만 등록됨)
+  // 1시간 주기 위젯 갱신 등록 (update: 앱 재실행 시 설정 갱신 반영)
   await Workmanager().registerPeriodicTask(
     'widget_hourly_update',
     _kWidgetRefreshTask,
     frequency: const Duration(hours: 1),
-    constraints: Constraints(networkType: NetworkType.connected),
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+    constraints: Constraints(networkType: NetworkType.notRequired),
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
   );
 
   HomeWidget.registerBackgroundCallback(_widgetBackground);
