@@ -33,6 +33,9 @@ dependencies:
   # 홈 위젯
   home_widget: ^0.7.0
 
+  # 백그라운드 작업 (위젯 자동 갱신)
+  workmanager: ^0.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,122 +1,158 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
+import 'models/settings_model.dart';
+import 'models/recommendation_model.dart';
+import 'providers/settings_provider.dart';
+import 'screens/settings_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/permission_screen.dart';
+import 'services/weather_service.dart';
+import 'services/air_quality_service.dart';
+import 'services/widget_service.dart';
 
-void main() {
-  runApp(const MyApp());
+const _kWidgetRefreshTask = 'widget_refresh';
+
+// ── 공통 데이터 fetch 및 위젯 갱신 로직 ─────────────────────────────────────
+
+Future<void> _refreshWidgetData() async {
+  final prefs = await SharedPreferences.getInstance();
+  final lat = prefs.getDouble('location_lat');
+  final lon = prefs.getDouble('location_lng');
+  if (lat == null || lon == null) return;
+
+  final address = prefs.getString('location_address') ?? '위치 없음';
+  final settings = SettingsModel(
+    pm25Threshold: prefs.getDouble('pm25Threshold') ?? 35,
+    tempMin: prefs.getDouble('tempMin') ?? 5,
+    tempMax: prefs.getDouble('tempMax') ?? 28,
+    rainThreshold: prefs.getDouble('rainThreshold') ?? 30,
+  );
+
+  try {
+    final weatherList = await WeatherService().getForecast(lat, lon);
+    final airData = await AirQualityService()
+        .getAirQuality(lat, lon)
+        .catchError((_) => null);
+    final currentPm25 = airData?.pm25;
+
+    final now = DateTime.now();
+    final today = _fmtDate(now);
+    final tomorrow = _fmtDate(now.add(const Duration(days: 1)));
+    final todayMinHour = now.hour < 5 ? 5 : now.hour;
+
+    List<HourlyRecommendation> toRec(String date, {int minHour = 5, double? pm25}) =>
+        weatherList
+            .where((w) => w.date == date && w.hour >= minHour)
+            .map((w) => HourlyRecommendation(
+                  hour: w.hour,
+                  temperature: w.temperature,
+                  rainProbability: w.rainProbability.toDouble(),
+                  weatherType: w.weatherType,
+                  pm25: pm25,
+                ))
+            .toList();
+
+    await WidgetService.update(
+      today: toRec(today, minHour: todayMinHour, pm25: currentPm25),
+      tomorrow: toRec(tomorrow),
+      settings: settings,
+      location: address,
+    );
+  } catch (_) {
+    // 갱신 실패 시 기존 데이터 유지
+  }
 }
 
-class MyApp extends StatelessWidget {
+// ── Workmanager 백그라운드 콜백 (위젯 자동 갱신용) ──────────────────────────
+// 반드시 최상위 함수 + @pragma('vm:entry-point') 필요
+
+@pragma('vm:entry-point')
+void _callbackDispatcher() {
+  Workmanager().executeTask((taskName, inputData) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await WidgetService.init();
+    await _refreshWidgetData();
+    return true;
+  });
+}
+
+// ── HomeWidget 백그라운드 콜백 (위젯 버튼 탭 등 인터랙션용) ─────────────────
+
+@pragma('vm:entry-point')
+Future<void> _widgetBackground(Uri? uri) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await WidgetService.init();
+  await _refreshWidgetData();
+}
+
+String _fmtDate(DateTime dt) =>
+    '${dt.year}${dt.month.toString().padLeft(2, '0')}${dt.day.toString().padLeft(2, '0')}';
+
+// ── 앱 진입점 ────────────────────────────────────────────────────────────────
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Workmanager 초기화 (백그라운드 위젯 갱신)
+  await Workmanager().initialize(
+    _callbackDispatcher,
+    isInDebugMode: false,
+  );
+
+  // 1시간 주기 위젯 갱신 등록 (update: 앱 재실행 시 설정 갱신 반영)
+  await Workmanager().registerPeriodicTask(
+    'widget_hourly_update',
+    _kWidgetRefreshTask,
+    frequency: const Duration(hours: 1),
+    constraints: Constraints(networkType: NetworkType.notRequired),
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
+  );
+
+  HomeWidget.registerBackgroundCallback(_widgetBackground);
+  await WidgetService.init();
+  runApp(const ProviderScope(child: MyApp()));
+}
+
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'tt_running_app',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const AppEntryPoint(),
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/settings-first': (context) => const SettingsScreen(isFirstRun: true),
+        '/permission': (context) => const PermissionScreen(),
+      },
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+// 최초 실행 여부에 따라 화면 분기
+class AppEntryPoint extends ConsumerWidget {
+  const AppEntryPoint({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFirstRun = ref.watch(isFirstRunProvider);
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+    return isFirstRun.when(
+      data: (firstRun) => firstRun
+          ? const PermissionScreen()
+          : const HomeScreen(),
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+      error: (_, _) => const SettingsScreen(isFirstRun: true),
     );
   }
 }

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_bg_dark">
+
+    <!-- 위치 -->
+    <TextView
+        android:id="@+id/tv_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="위치 로딩 중"
+        android:textSize="10sp"
+        android:textColor="#99FFFFFF"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:paddingBottom="4dp" />
+
+    <!-- 오늘/내일 시간대 목록 (섹션 헤더 포함) -->
+    <ListView
+        android:id="@+id/lv_slots"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@null"
+        android:dividerHeight="0dp" />
+
+    <!-- 갱신 시각 -->
+    <TextView
+        android:id="@+id/tv_updated_at"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text=""
+        android:textSize="9sp"
+        android:textColor="#55FFFFFF" />
+
+</LinearLayout>

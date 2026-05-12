@@ -42,3 +42,7 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // workmanager Flutter 패키지가 WorkManager 의존성을 포함함
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp"
+    android:paddingStart="2dp"
+    android:paddingEnd="2dp"
+    android:gravity="center_vertical">
+
+    <!-- 시간 + 등급 이모지 -->
+    <TextView
+        android:id="@+id/tv_slot_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="80dp"
+        android:text="오전 6시"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF" />
+
+    <!-- 날씨 요약 (기온 · 강수 · PM2.5) -->
+    <TextView
+        android:id="@+id/tv_slot_detail"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="20°C · 강수 10%"
+        android:textSize="11sp"
+        android:textColor="#BBFFFFFF"
+        android:gravity="end"
+        android:singleLine="true"
+        android:ellipsize="end" />
+
+</LinearLayout>
